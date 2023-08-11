@@ -92,7 +92,7 @@ exports.loginUser = async (req, res, next) => {
   } catch (err) {
     console.log(err);
 
-    return res.status(400).json({ message: "Unable to Login!", error: err });
+    return res.status(404).json({ message: "Unable to Login!", error: err });
   }
   //   return res.status(400).json({ error: "Error While Creating Account!" });
 };
