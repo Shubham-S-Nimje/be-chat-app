@@ -1,35 +1,55 @@
 const User = require("../models/user-table");
+const dotenv = require("dotenv").config();
+const bcrypt = require("bcrypt");
+var jwt = require("jsonwebtoken");
+
+const { JWT_SECRET } = dotenv.parsed;
+
+// console.log(JWT_SECRET)
 
 exports.addUser = async (req, res, next) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, phonenumber } = req.body;
 
   //   console.log(username, email, password);
 
-  if (!username || !email || !password) {
+  if (!username || !email || !password || !phonenumber) {
     return res
       .status(400)
       .json({ error: "Email And Password are required fields!" });
   }
 
+  const salt = await bcrypt.genSalt(10);
+  const secretpass = await bcrypt.hash(password, salt);
+
   try {
     const createuser = await User.create({
       username: username,
       email: email,
-      password: password,
+      password: secretpass,
+      phonenumber: phonenumber,
     });
 
     // console.log(createuser)
 
+    const data = {
+      user: {
+        id: createuser.id,
+      },
+    };
+
+    const authToken = jwt.sign(data, JWT_SECRET);
+    // console.log(jwtdata)
+
     res.status(201).json({
       message: "Account created successfully!",
-      data: createuser,
+      data: { authToken },
     });
   } catch (err) {
     //   console.log(err);
 
     return res
       .status(400)
-      .json({ message: "Unable to Create Account!", error: err });
+      .json({error: err });
   }
   //   return res.status(400).json({ error: "Error While Creating Account!" });
 };
@@ -37,27 +57,37 @@ exports.addUser = async (req, res, next) => {
 exports.loginUser = async (req, res, next) => {
   const { email, password } = req.body;
 
-//   console.log(email, password);
+  //   console.log(email, password);
 
   try {
-    const createuser = await User.findAll({
+    const user = await User.findAll({
       where: { email: email },
     });
-    // console.log(createuser[0].password)
-    if (createuser) {
-      if (createuser[0].password == password) {
-        // console.log('true')
+    // console.log(user[0].id);
 
-        res.status(200).json({ message: "Login successfull!", user: createuser });
-      } else {
-        //   console.log("false");
-        console.log("Password incorrect");
-        res.status(401).json({ message: "Password incorrect!" });
-      }
+    if (user) {
+      bcrypt.compare(password, user[0].password, function (err, result) {
+        if (result) {
+          const data = {
+            user: {
+              id: user[0].id,
+            },
+          };
+
+          const authToken = jwt.sign(data, JWT_SECRET);
+
+          res
+            .status(200)
+            .json({ message: "Login successfull!", user: { authToken } });
+        } else {
+          console.log("Password is incorrect");
+          res.status(401).json({ message: "Password is incorrect!" });
+        }
+      });
     } else {
       //   console.log("false");
-      console.log("User not found");
-      res.status(401).json({ message: "User not found!" });
+      console.log("Email is incorrect");
+      res.status(401).json({ message: "Email is incorrect!" });
     }
   } catch (err) {
     console.log(err);

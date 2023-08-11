@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const sequelize = require("./utils/database");
 const morgan = require("morgan");
-const fs = require('fs')
+const fs = require("fs");
 const path = require("path");
 
 const authRoutes = require("./routes/auth");
@@ -23,6 +23,7 @@ app.use(cors());
 app.use("/auth", authRoutes);
 
 sequelize
+  // .sync({ force: true })
   .sync()
   .then((results) => {
     // console.log(results);
