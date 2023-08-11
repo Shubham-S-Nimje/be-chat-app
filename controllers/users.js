@@ -47,9 +47,7 @@ exports.addUser = async (req, res, next) => {
   } catch (err) {
     //   console.log(err);
 
-    return res
-      .status(400)
-      .json({error: err });
+    return res.status(400).json({ error: err });
   }
   //   return res.status(400).json({ error: "Error While Creating Account!" });
 };
@@ -94,5 +92,25 @@ exports.loginUser = async (req, res, next) => {
 
     return res.status(404).json({ message: "Unable to Login!", error: err });
   }
-  //   return res.status(400).json({ error: "Error While Creating Account!" });
+};
+
+exports.fetchUsers = async (req, res, next) => {
+  try {
+    const users = await User.findAll();
+
+    if (users) {
+      res
+        .status(200)
+        .json({ message: "Users Fetched successfully!", users: { users } });
+    } else {
+      //   console.log("No Users Found!");
+      res.status(401).json({ message: "No Users Found!" });
+    }
+  } catch (err) {
+    // console.log(err);
+
+    return res
+      .status(404)
+      .json({ message: "Unable to Fetch Users!", error: err });
+  }
 };

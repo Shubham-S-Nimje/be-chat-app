@@ -7,6 +7,9 @@ const fs = require("fs");
 const path = require("path");
 
 const authRoutes = require("./routes/auth");
+const chatRoutes = require("./routes/chat");
+const User = require("./models/user-table");
+const Chat = require("./models/chat-table");
 
 const app = express();
 
@@ -21,6 +24,11 @@ app.use(bodyParser.json());
 app.use(cors({ origin: "http://localhost:3000" }));
 
 app.use("/auth", authRoutes);
+
+app.use("/chat", chatRoutes);
+
+User.hasMany(Chat);
+Chat.belongsTo(User);
 
 sequelize
   // .sync({ force: true })
