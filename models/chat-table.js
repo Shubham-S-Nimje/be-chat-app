@@ -12,12 +12,14 @@ const Chat = sequelize.define("chat", {
   username: {
     type: Sequelize.STRING,
     allownull: false,
-    unique: true,
+  },
+  email: {
+    type: Sequelize.STRING,
+    allownull: false,
   },
   message: {
     type: Sequelize.STRING,
     allownull: false,
-    unique: true,
   },
 });
 

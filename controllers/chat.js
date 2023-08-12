@@ -1,7 +1,8 @@
 const Chat = require("../models/chat-table");
+const { Op } = require("sequelize");
 
 exports.addChat = async (req, res, next) => {
-  const { message, email } = await req.body;
+  const { message } = await req.body;
 
   // console.log(message);
   // console.log(req.user.id);
@@ -16,13 +17,14 @@ exports.addChat = async (req, res, next) => {
     const addChat = await Chat.create({
       message: message,
       username: req.user.username,
+      email: req.user.email,
       userId: req.user.id,
     });
     // console.log(addChat)
 
     res.status(201).json({
       message: "Chat added successfully!",
-      data: addChat,
+      data: { addChat },
     });
   } catch (err) {
     // console.log(err);
@@ -31,13 +33,30 @@ exports.addChat = async (req, res, next) => {
 };
 
 exports.fetchChat = async (req, res, next) => {
+  const lastchatid = req.params.id - 5;
+
+  console.log(req.params.id);
+
   try {
-    const chats = await Chat.findAll();
+    const chats = await Chat.findAll({
+      where: {
+        id: {
+          [Op.gt]: lastchatid,
+        },
+      },
+    });
+    // console.log(chats.length)
 
     if (chats) {
-      res
-        .status(200)
-        .json({ message: "Chats Fetched successfully!", data: { chats } });
+      if (lastchatid == chats.length) {
+        // console.log("Everything is up to date!")
+        res.status(200).json({ message: "Everything is up to date!" });
+      } else {
+        // console.log("Chats Fetched successfully!")
+        res
+          .status(200)
+          .json({ message: "Chats Fetched successfully!", data: { chats } });
+      }
     } else {
       //   console.log("No chats Found!");
       res.status(401).json({ message: "No chats Found!" });

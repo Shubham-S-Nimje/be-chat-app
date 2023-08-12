@@ -5,6 +5,6 @@ const chatController = require("../controllers/chat");
 const authenticateUser = require("../middleware/auth");
 
 router.post("/add-chat", authenticateUser, chatController.addChat);
-router.get("/fetch-chats", chatController.fetchChat);
+router.post("/fetch-chats/:id", chatController.fetchChat);
 
 module.exports = router;
