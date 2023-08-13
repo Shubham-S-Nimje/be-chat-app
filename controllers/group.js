@@ -1,3 +1,4 @@
+const Admin = require("../models/admin-table");
 const Group = require("../models/group-table");
 const User = require("../models/user-table");
 const UserGroup = require("../models/usergroup-table");
@@ -31,6 +32,12 @@ exports.createGroup = async (req, res, next) => {
     });
     // console.log(adduserTogroup);
 
+    const makeAdmin = await Admin.create({
+      groupId: addGroup.id,
+      userId: req.user.id,
+    });
+    // console.log(makeAdmin);
+
     res.status(201).json({
       message: "Group added successfully!",
       data: { addGroup },
@@ -56,7 +63,7 @@ exports.fetchGroup = async (req, res, next) => {
       ],
     });
 
-    console.log(user);
+    // console.log(user);
 
     if (user) {
       const groups = user.groups;
@@ -70,7 +77,7 @@ exports.fetchGroup = async (req, res, next) => {
       res.status(401).json({ message: "No groups Found!" });
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     return res.status(404).json({ message: "Unable to Fetch groups!" });
   }
 };
@@ -78,7 +85,7 @@ exports.fetchGroup = async (req, res, next) => {
 exports.adduserTogroup = async (req, res, next) => {
   const { groupId, userId } = await req.body;
 
-  // console.log(groupId, userId);
+  // console.log(groupId, userId, req.user.id);
 
   if (!groupId || !userId) {
     return res.status(400).json({
@@ -87,18 +94,122 @@ exports.adduserTogroup = async (req, res, next) => {
   }
 
   try {
-    const adduserTogroup = await UserGroup.create({
-      groupId: groupId,
-      userId: userId,
+    const isAdmin = await Admin.findOne({
+      where: {
+        userId: req.user.id,
+        groupId: groupId,
+      },
     });
-    console.log(adduserTogroup);
+    // console.log(isAdmin);
 
-    res.status(201).json({
-      message: "User added in group added successfully!",
-      data: { adduserTogroup },
-    });
+    if (isAdmin) {
+      const adduserTogroup = await UserGroup.create({
+        groupId: groupId,
+        userId: userId,
+      });
+
+      // console.log(adduserTogroup);
+
+      return res.status(201).json({
+        message: "User added in group added successfully!",
+        data: { adduserTogroup },
+      });
+    } else {
+      return res.status(404).json({
+        message: "Not group admin!",
+        data: { adduserTogroup },
+      });
+    }
   } catch (err) {
     // console.log(err);
-    return res.status(400).json({ error: "Error while adding user in group" });
+    return res.status(400).json({ error: "Not group admin!" });
+  }
+};
+
+exports.removeUserfromgroup = async (req, res, next) => {
+  const { groupId, userId } = await req.body;
+
+  console.log(groupId, userId, req.user.id);
+
+  if (!groupId || !userId) {
+    return res.status(400).json({
+      error: "Username and Groupname are required fields!",
+    });
+  }
+
+  try {
+    const isAdmin = await Admin.findOne({
+      where: {
+        userId: req.user.id,
+        groupId: groupId,
+      },
+    });
+    // console.log(isAdmin);
+
+    if (isAdmin) {
+      const adduserTogroup = await UserGroup.destroy({
+        where: {
+          groupId: groupId,
+          userId: userId,
+        },
+      });
+
+      // console.log(adduserTogroup);
+
+      return res.status(201).json({
+        message: "User removed from group successfully!",
+      });
+    } else {
+      return res.status(404).json({
+        message: "Not a group admin!",
+      });
+    }
+  } catch (err) {
+    // console.log(err);
+    return res.status(400).json({ error: "Not a group admin!" });
+  }
+};
+
+exports.adminOfgroup = async (req, res, next) => {
+  const { groupId, userId } = await req.body;
+
+  console.log(groupId, userId, req.user.id);
+
+  if (!groupId || !userId) {
+    return res.status(400).json({
+      error: "Username and Groupname are required fields!",
+    });
+  }
+
+  try {
+    const isAdmin = await Admin.findOne({
+      where: {
+        userId: req.user.id,
+        groupId: groupId,
+      },
+    });
+    
+    console.log(isAdmin);
+
+    if (isAdmin) {
+      const makeAdmin = await Admin.create({
+        groupId: groupId,
+        userId: userId,
+      });
+
+      console.log(makeAdmin);
+
+      res.status(201).json({
+        message: "Admin created successfully!",
+        data: { makeAdmin },
+      });
+    } else {
+      res.status(404).json({
+        message: "Invalid admin!",
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ error: "Unable to make admin!" });
   }
 };

@@ -13,6 +13,7 @@ const User = require("./models/user-table");
 const Chat = require("./models/chat-table");
 const Group = require("./models/group-table");
 const UserGroup = require("./models/usergroup-table");
+const Admin = require("./models/admin-table");
 
 const app = express();
 
@@ -34,6 +35,9 @@ app.use("/group", groupRoutes);
 
 User.hasMany(Chat);
 Chat.belongsTo(User);
+
+Group.hasMany(Admin);
+Admin.belongsTo(Group);
 
 Group.hasMany(Chat);
 Chat.belongsTo(Group);
