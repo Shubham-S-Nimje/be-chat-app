@@ -2,7 +2,7 @@ const Chat = require("../models/chat-table");
 const { Op } = require("sequelize");
 
 exports.addChat = async (req, res, next) => {
-  const { message } = await req.body;
+  const { message, activegrpid } = await req.body;
 
   // console.log(message);
   // console.log(req.user.id);
@@ -18,6 +18,7 @@ exports.addChat = async (req, res, next) => {
       message: message,
       username: req.user.username,
       email: req.user.email,
+      groupId: activegrpid,
       userId: req.user.id,
     });
     // console.log(addChat)
@@ -33,9 +34,12 @@ exports.addChat = async (req, res, next) => {
 };
 
 exports.fetchChat = async (req, res, next) => {
-  const lastchatid = req.params.id - 5;
+  const idlist = req.query.id;
 
-  console.log(req.params.id);
+  const lastchatid = idlist[1] - 5;
+  const activeGrpid = idlist[0];
+
+  console.log("lastchatid", lastchatid, "activeGrpid", activeGrpid);
 
   try {
     const chats = await Chat.findAll({
@@ -43,9 +47,10 @@ exports.fetchChat = async (req, res, next) => {
         id: {
           [Op.gt]: lastchatid,
         },
+        groupId: activeGrpid,
       },
     });
-    // console.log(chats.length)
+    console.log(chats);
 
     if (chats) {
       if (lastchatid == chats.length) {
