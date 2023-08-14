@@ -12,11 +12,11 @@ const UserGroup = sequelize.define(
       primaryKey: true,
     },
     userId: {
-      type: Sequelize.STRING,
+      type: Sequelize.INTEGER,
       allownull: false,
     },
     groupId: {
-      type: Sequelize.STRING,
+      type: Sequelize.INTEGER,
       allownull: false,
     },
   }

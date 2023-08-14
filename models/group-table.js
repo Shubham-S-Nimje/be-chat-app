@@ -22,7 +22,7 @@ const Group = sequelize.define("group", {
     allownull: false,
   },
   adminuserId: {
-    type: Sequelize.STRING,
+    type: Sequelize.INTEGER,
     allownull: false,
   },
 });

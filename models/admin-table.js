@@ -10,11 +10,11 @@ const Admin = sequelize.define("admin", {
     primaryKey: true,
   },
   groupId: {
-    type: Sequelize.STRING,
+    type: Sequelize.INTEGER,
     allownull: false,
   },
   userId: {
-    type: Sequelize.STRING,
+    type: Sequelize.INTEGER,
     allownull: false,
   },
 });
