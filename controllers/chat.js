@@ -22,7 +22,7 @@ exports.addChat = async (req, res, next) => {
       userId: req.user.id,
       touserId: activeuserid,
     });
-    console.log(addChat);
+    // console.log(addChat);
 
     res.status(201).json({
       message: "Chat added successfully!",
@@ -38,18 +38,20 @@ exports.fetchChat = async (req, res, next) => {
   const idlist = req.query.id;
   // console.log(req.query.id)
 
-  let lastchatid;
-  if (lastchatid > 5) {
-    lastchatid = +idlist[1] - 5;
-  } else {
-    lastchatid = 0;
-  }
+  // let lastchatid;
+  // if (+idlist[1] > 5) {
+  //   lastchatid = +idlist[1] - 5;
+  //   // console.log(lastchatid)
+  // } else {
+  //   lastchatid = 0;
+  // }
   const activeGrpid = +idlist[0];
+  const messageLimit = +idlist[1];
   const activeuserid = +idlist[2];
 
   console.log(
-    "lastchatid",
-    lastchatid,
+    "messageLimit",
+    messageLimit,
     "activeGrpid",
     activeGrpid,
     "activeuserid",
@@ -59,39 +61,48 @@ exports.fetchChat = async (req, res, next) => {
   try {
     let chats;
     if (activeGrpid) {
-      chats = [];
+      // chats = [];
       chats = await Chat.findAll({
         where: {
-          id: {
-            [Op.gt]: lastchatid,
-          },
           groupId: activeGrpid,
         },
+        order: [["createdAt", "DESC"]],
+        limit: messageLimit,
       });
       // console.log(chats);
     }
 
     if (activeuserid) {
-      chats = [];
+      // chats = [];
       chats = await Chat.findAll({
         where: {
-          id: {
-            [Op.gt]: lastchatid,
-          },
-          touserId: activeuserid,
+          [Op.or]: [
+            {
+              userId: req.user.id,
+              touserId: activeuserid,
+            },
+            {
+              userId: activeuserid,
+              touserId: req.user.id,
+            },
+          ],
         },
+        order: [["createdAt", "DESC"]],
+        limit: messageLimit,
       });
       // console.log(chats);
     }
 
     if (chats) {
-      console.log(chats.length);
+      // console.log(chats.length);
+      chats.sort((a, b) => a.createdAt - b.createdAt);
+
       if (chats.length === 0) {
         console.log("No chats found!");
         res.status(200).json({ message: "Nochats found!", data: { chats } });
-      } else if (lastchatid == chats.length) {
+      } else if (messageLimit > chats.length + 5) {
         console.log("Everything is up to date!");
-        res.status(200).json({ message: "Everything is up to date!" });
+        res.status(404).json({ message: "Everything is up to date!" });
       } else {
         console.log("Chats Fetched successfully!");
         res
@@ -103,7 +114,7 @@ exports.fetchChat = async (req, res, next) => {
       res.status(401).json({ message: "No chats Found!" });
     }
   } catch (err) {
-    // console.log(err);
+    console.log(err);
 
     return res
       .status(404)
