@@ -13,15 +13,20 @@ exports.addChat = async (req, res, next) => {
     });
   }
 
+  const t = await sequelize.transaction();
+
   try {
-    const addChat = await Chat.create({
-      message: message,
-      username: req.user.username,
-      email: req.user.email,
-      groupId: activegrpid,
-      userId: req.user.id,
-      touserId: activeuserid,
-    });
+    const addChat = await Chat.create(
+      {
+        message: message,
+        username: req.user.username,
+        email: req.user.email,
+        groupId: activegrpid,
+        userId: req.user.id,
+        touserId: activeuserid,
+      },
+      { transaction: t }
+    );
     // console.log(addChat);
 
     res.status(201).json({
@@ -30,6 +35,7 @@ exports.addChat = async (req, res, next) => {
     });
   } catch (err) {
     console.log(err);
+    await t.rollback();
     return res.status(400).json({ error: "Error while adding chat" });
   }
 };
@@ -49,14 +55,16 @@ exports.fetchChat = async (req, res, next) => {
   const messageLimit = +idlist[1];
   const activeuserid = +idlist[2];
 
-  console.log(
-    "messageLimit",
-    messageLimit,
-    "activeGrpid",
-    activeGrpid,
-    "activeuserid",
-    activeuserid
-  );
+  // console.log(
+  //   "messageLimit",
+  //   messageLimit,
+  //   "activeGrpid",
+  //   activeGrpid,
+  //   "activeuserid",
+  //   activeuserid
+  // );
+
+  const t = await sequelize.transaction();
 
   try {
     let chats;
@@ -68,6 +76,7 @@ exports.fetchChat = async (req, res, next) => {
         },
         order: [["createdAt", "DESC"]],
         limit: messageLimit,
+        transaction: t,
       });
       // console.log(chats);
     }
@@ -89,9 +98,12 @@ exports.fetchChat = async (req, res, next) => {
         },
         order: [["createdAt", "DESC"]],
         limit: messageLimit,
+        transaction: t,
       });
       // console.log(chats);
     }
+
+    await t.commit();
 
     if (chats) {
       // console.log(chats.length);
@@ -115,6 +127,7 @@ exports.fetchChat = async (req, res, next) => {
     }
   } catch (err) {
     console.log(err);
+    await t.rollback();
 
     return res
       .status(404)

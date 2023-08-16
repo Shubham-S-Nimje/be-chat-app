@@ -15,28 +15,45 @@ exports.createGroup = async (req, res, next) => {
     });
   }
 
+  const t = await sequelize.transaction();
+
   try {
-    const addGroup = await Group.create({
-      grpname: grpname,
-      description: description,
-      email: req.user.email,
-      adminuserId: req.user.id,
-    });
+    const addGroup = await Group.create(
+      {
+        grpname: grpname,
+        description: description,
+        email: req.user.email,
+        adminuserId: req.user.id,
+      },
+      { transaction: t }
+    );
     // console.log(addGroup.id)
 
     // await addGroup.addUser(req.user.id);
 
-    const adduserTogroup = await UserGroup.create({
-      groupId: addGroup.id,
-      userId: req.user.id,
-    });
+    const adduserTogroup = await UserGroup.create(
+      {
+        groupId: addGroup.id,
+        userId: req.user.id,
+      },
+      {
+        transaction: t,
+      }
+    );
     // console.log(adduserTogroup);
 
-    const makeAdmin = await Admin.create({
-      groupId: addGroup.id,
-      userId: req.user.id,
-    });
+    const makeAdmin = await Admin.create(
+      {
+        groupId: addGroup.id,
+        userId: req.user.id,
+      },
+      {
+        transaction: t,
+      }
+    );
     // console.log(makeAdmin);
+
+    await t.commit();
 
     res.status(201).json({
       message: "Group added successfully!",
@@ -44,6 +61,7 @@ exports.createGroup = async (req, res, next) => {
     });
   } catch (err) {
     // console.log(err);
+    await t.rollback();
     return res.status(400).json({ error: "Error while adding Group" });
   }
 };
@@ -53,6 +71,8 @@ exports.fetchGroup = async (req, res, next) => {
 
   // console.log(req.user.id);
 
+  const t = await sequelize.transaction();
+
   try {
     const user = await User.findByPk(userId, {
       include: [
@@ -61,6 +81,7 @@ exports.fetchGroup = async (req, res, next) => {
           attributes: ["id", "grpname", "description"],
         },
       ],
+      transaction: t,
     });
 
     // console.log(user);
@@ -70,6 +91,8 @@ exports.fetchGroup = async (req, res, next) => {
 
       // console.log(groups);
 
+      await t.commit();
+
       res
         .status(200)
         .json({ message: "Group Fetched successfully!", data: { groups } });
@@ -78,6 +101,7 @@ exports.fetchGroup = async (req, res, next) => {
     }
   } catch (err) {
     // console.log(err);
+    await t.rollback();
     return res.status(404).json({ message: "Unable to Fetch groups!" });
   }
 };
@@ -93,22 +117,29 @@ exports.adduserTogroup = async (req, res, next) => {
     });
   }
 
+  const t = await sequelize.transaction();
+
   try {
     const isAdmin = await Admin.findOne({
       where: {
         userId: req.user.id,
         groupId: groupId,
       },
+      transaction: t,
     });
     // console.log(isAdmin);
 
     if (isAdmin) {
-      const adduserTogroup = await UserGroup.create({
-        groupId: groupId,
-        userId: userId,
-      });
+      const adduserTogroup = await UserGroup.create(
+        {
+          groupId: groupId,
+          userId: userId,
+        },
+        { transaction: t }
+      );
 
       // console.log(adduserTogroup);
+      await t.commit();
 
       return res.status(201).json({
         message: "User added in group added successfully!",
@@ -122,6 +153,7 @@ exports.adduserTogroup = async (req, res, next) => {
     }
   } catch (err) {
     // console.log(err);
+    await t.rollback();
     return res.status(400).json({ error: "Not group admin!" });
   }
 };
@@ -129,7 +161,7 @@ exports.adduserTogroup = async (req, res, next) => {
 exports.removeUserfromgroup = async (req, res, next) => {
   const { groupId, userId } = await req.body;
 
-  console.log(groupId, userId, req.user.id);
+  // console.log(groupId, userId, req.user.id);
 
   if (!groupId || !userId) {
     return res.status(400).json({
@@ -137,12 +169,15 @@ exports.removeUserfromgroup = async (req, res, next) => {
     });
   }
 
+  const t = await sequelize.transaction();
+
   try {
     const isAdmin = await Admin.findOne({
       where: {
         userId: req.user.id,
         groupId: groupId,
       },
+      transaction: t,
     });
     // console.log(isAdmin);
 
@@ -152,9 +187,12 @@ exports.removeUserfromgroup = async (req, res, next) => {
           groupId: groupId,
           userId: userId,
         },
+        transaction: t,
       });
 
       // console.log(adduserTogroup);
+
+      await t.commit();
 
       return res.status(201).json({
         message: "User removed from group successfully!",
@@ -166,6 +204,8 @@ exports.removeUserfromgroup = async (req, res, next) => {
     }
   } catch (err) {
     // console.log(err);
+
+    await t.rollback();
     return res.status(400).json({ error: "Not a group admin!" });
   }
 };
@@ -181,23 +221,31 @@ exports.adminOfgroup = async (req, res, next) => {
     });
   }
 
+  const t = await sequelize.transaction();
+
   try {
     const isAdmin = await Admin.findOne({
       where: {
         userId: req.user.id,
         groupId: groupId,
       },
+      transaction: t,
     });
-    
-    console.log(isAdmin);
+
+    // console.log(isAdmin);
 
     if (isAdmin) {
-      const makeAdmin = await Admin.create({
-        groupId: groupId,
-        userId: userId,
-      });
+      const makeAdmin = await Admin.create(
+        {
+          groupId: groupId,
+          userId: userId,
+        },
+        { transaction: t }
+      );
 
-      console.log(makeAdmin);
+      // console.log(makeAdmin);
+
+      await t.commit();
 
       res.status(201).json({
         message: "Admin created successfully!",
@@ -210,6 +258,8 @@ exports.adminOfgroup = async (req, res, next) => {
     }
   } catch (err) {
     console.log(err);
+
+    await t.rollback();
     return res.status(400).json({ error: "Unable to make admin!" });
   }
 };
