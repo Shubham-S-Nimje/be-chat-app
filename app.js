@@ -16,6 +16,7 @@ const Group = require("./models/group-table");
 const UserGroup = require("./models/usergroup-table");
 const Admin = require("./models/admin-table");
 const { Server } = require("socket.io");
+const { job } = require("./utils/archivemsg");
 
 const app = express();
 
@@ -86,6 +87,7 @@ sequelize
   .sync()
   .then((results) => {
     // console.log(results);
+    job.start();
   })
   .catch((error) => console.log(error));
 
