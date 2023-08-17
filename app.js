@@ -86,6 +86,7 @@ sequelize
   .sync()
   .then((results) => {
     // console.log(results);
-    server.listen(process.env.PORT || "4000");
   })
   .catch((error) => console.log(error));
+
+server.listen(process.env.PORT || "4000");

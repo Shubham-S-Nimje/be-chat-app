@@ -1,11 +1,14 @@
 const Chat = require("../models/chat-table");
 const { Op } = require("sequelize");
+const sequelize = require("../utils/database");
+const uploadToS3 = require("../services/s3services");
+const multer = require("multer");
 
 exports.addChat = async (req, res, next) => {
   const { message, activegrpid, activeuserid } = await req.body;
 
-  // console.log(message);
-  // console.log(req.user.id);
+  console.log(message);
+  console.log(req.user.id);
 
   if (!message) {
     return res.status(400).json({
@@ -24,10 +27,10 @@ exports.addChat = async (req, res, next) => {
         groupId: activegrpid,
         userId: req.user.id,
         touserId: activeuserid,
-      },
-      { transaction: t }
+      }
+      // { transaction: t }
     );
-    // console.log(addChat);
+    console.log(addChat);
 
     res.status(201).json({
       message: "Chat added successfully!",
@@ -35,9 +38,77 @@ exports.addChat = async (req, res, next) => {
     });
   } catch (err) {
     console.log(err);
-    await t.rollback();
+    // await t.rollback();
     return res.status(400).json({ error: "Error while adding chat" });
   }
+};
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage }).single("file");
+
+exports.addFile = async (req, res, next) => {
+  upload(req, res, async (error) => {
+    if (error) {
+      console.error("Error uploading file:", error);
+      return res.status(500).json({ error: "Error uploading file" });
+    }
+
+    const fileData = req.file;
+    console.log(fileData);
+
+    if (!fileData) {
+      return res.status(400).json({
+        error: "File not found!",
+      });
+    }
+
+    const { activegrpid, activeuserid } = req.body;
+    console.log(activegrpid, activeuserid);
+
+    const filename = `${req.user.id}/${new Date().toISOString()}/${
+      fileData.originalname
+    }`;
+
+    const fileUrl = await uploadToS3(fileData.buffer, filename);
+
+    console.log(fileUrl);
+
+    const t = await sequelize.transaction();
+
+    console.log(
+      fileUrl,
+      req.user.username,
+      req.user.email,
+      +activegrpid,
+      req.user.id,
+      +activeuserid
+    );
+
+    try {
+      const addfile = await Chat.create(
+        {
+          message: fileUrl,
+          username: req.user.username,
+          email: req.user.email,
+          groupId: activegrpid === "null" ? null : +activegrpid,
+          userId: req.user.id,
+          touserId: activeuserid === "null" ? null : +activeuserid,
+        }
+        // { transaction: t }
+      );
+      console.log(addfile);
+
+      // await t.commit();
+
+      return res
+        .status(200)
+        .json({ message: "File uploaded successfully.", data: { addfile } });
+    } catch (error) {
+      // await t.rollback();
+      console.log(error);
+      return res.status(400).json({ error: "Unable to upload file." });
+    }
+  });
 };
 
 exports.fetchChat = async (req, res, next) => {

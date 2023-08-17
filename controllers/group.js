@@ -2,6 +2,7 @@ const Admin = require("../models/admin-table");
 const Group = require("../models/group-table");
 const User = require("../models/user-table");
 const UserGroup = require("../models/usergroup-table");
+const sequelize = require("../utils/database");
 
 exports.createGroup = async (req, res, next) => {
   const { grpname, description } = await req.body;
